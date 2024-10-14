@@ -3,19 +3,23 @@
     and territory
 */
 
+DROP VIEW IF EXISTS SalesBySupplierCountry;
 
-CREATE VIEW employeeByRegionTerritory AS
-SELECT r.regiondescription, t.territorydescription, COUNT(*)
-FROM regions r
-JOIN territories t ON r.regionid = t.regionid
-GROUP BY r.regiondescription, t.territorydescription
-ORDER BY r.regiondescription, t.territorydescription
+CREATE OR REPLACE VIEW SalesBySupplierCountry  AS
+SELECT s.country AS Country, SUM(od.unitprice * od.quantity)::money TotalSales
+FROM suppliers s
+JOIN products p ON s.supplierid = p.supplierid
+JOIN orders_details od ON p.productid = od.productid
+GROUP BY s.country
+ORDER BY TotalSales DESC;
 
+SELECT * FROM SalesBySupplierCountry;
 
 /*
     Quantity of products bought by product name,
     category and year
 */
+DROP VIEW IF EXISTS quantityByProductCategoryYear;
 
 CREATE OR REPLACE VIEW quantityByProductCategoryYear AS
 SELECT 
@@ -122,7 +126,7 @@ SELECT * FROM filterCustomerCountry('UK');
 
 -- Function que returna tabla
 
-SELECT * FROM orders;
+
 DROP FUNCTION IF EXISTS ordersSummarizeByCountry(varchar(20));
 CREATE OR REPLACE FUNCTION ordersSummarizeByCountry(
     country_ varchar(20)
