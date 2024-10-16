@@ -3,28 +3,33 @@
     and territory
 */
 
+-- Check if the view already exists
 DROP VIEW IF EXISTS SalesBySupplierCountry;
 
+-- SalesBySupplierCountry view table definition
 CREATE OR REPLACE VIEW SalesBySupplierCountry  AS
-SELECT s.country AS Country, SUM(od.unitprice * od.quantity)::money TotalSales
+SELECT s.country AS Country, s.city AS City, SUM(od.unitprice * od.quantity)::money TotalSales
 FROM suppliers s
 JOIN products p ON s.supplierid = p.supplierid
 JOIN orders_details od ON p.productid = od.productid
-GROUP BY s.country
+GROUP BY s.country, s.city
 ORDER BY TotalSales DESC;
 
+-- invoking the table view "SalesBySupplierCountry".
 SELECT * FROM SalesBySupplierCountry;
 
 /*
     Quantity of products bought by product name,
     category and year
 */
+-- Check if the view already exists
 DROP VIEW IF EXISTS quantityByProductCategoryYear;
 
+-- quantityByProductCategoryYear view table definition
 CREATE OR REPLACE VIEW quantityByProductCategoryYear AS
-SELECT 
-    Extract(YEAR FROM o.orderdate) AS Year_of_order, 
-    c.categoryname AS Category_Name, 
+SELECT
+    Extract(YEAR FROM o.orderdate) AS Year_of_order,
+    c.categoryname AS Category_Name,
     p.productname AS Product_Name,
     SUM(od.quantity) AS Quantity
 FROM orders o
@@ -34,6 +39,7 @@ JOIN categories c ON p.categoryId = c.categoryId
 GROUP BY Year_of_order, c.categoryname, p.productname
 ORDER BY Year_of_order, Category_Name;
 
+-- invoking the table view "quantityByProductCategoryYear".
 SELECT * FROM quantityByProductCategoryYear;
 
 
@@ -41,6 +47,7 @@ SELECT * FROM quantityByProductCategoryYear;
     Creation index in product name
 */
 
+-- Implementation of the index in productname column
 CREATE INDEX productNameIndex
 ON products (productname);
 
@@ -77,9 +84,13 @@ FROM products;
     base de datos, por lo tanto no pueden usar ciertos
     clausulas (update, delete, insert)
 */
+/*
+ Generate a user-defined function to calculate the discount that will be applied to a product, thanks to its price and discount percentage.
+*/
+-- Check if the fuction already exists
+DROP FUNCTION IF EXISTS Discount (percentage DECIMAL(5,2), value INT);
 
--- Function que retorna un escalar
-
+-- "Discount" function definition (header and body)
 CREATE OR REPLACE FUNCTION Discount(
     percentage DECIMAL(5,2),
     value INT
@@ -92,10 +103,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- invoking the function "Discount".
 SELECT Discount(0.50, 1000) AS TotalDiscount;
 
--- Function que retorna una tabla
+/*
+    Create a user-defined function that returns a table with customers from a given country.
+*/
+-- Check if the fuction already exists
+DROP FUNCTION IF EXISTS filterCustomerCountry(
+    country_ varchar(20)
+)
 
+-- "filterCustomerCountry" function definition (header and body)
 CREATE OR REPLACE FUNCTION filterCustomerCountry(
     country_ varchar(20)
 )
@@ -121,13 +140,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- invoking the function "filterCustomerCountry".
 SELECT * FROM filterCustomerCountry('UK');
 
 
--- Function que returna tabla
+/*
+    Generate a user-defined function that returns a table grouped by country, city and number of orders requested by country requested.
+*/
 
 
+-- Check if the fuction already exists
 DROP FUNCTION IF EXISTS ordersSummarizeByCountry(varchar(20));
+
+-- "ordersSummarizeByCountry" function definition (header and body)
 CREATE OR REPLACE FUNCTION ordersSummarizeByCountry(
     country_ varchar(20)
 )
@@ -148,6 +173,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- invoking the function "ordersSummarizeByCountry".
 SELECT * FROM ordersSummarizeByCountry('France');
 
 
